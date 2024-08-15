@@ -21,16 +21,22 @@ schedule durations and total work effort.
 
 ### Prerequisites
 
-- **Rust**: You'll need to have Rust installed on your system to build the
-  project. You can install Rust using `rustup`:
+You'll need to have Rust installed on your system to build the project. You can
+install Rust using `rustup`:
 
-  ```bash
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-  ```
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
 
 ### Building from Source
 
-- Clone and build the repository:
+_Preferred_: Install directly from crates.io:
+
+```bash
+cargo install mcps
+```
+
+_Alternative_: Clone and build the repository locally:
 
 ```bash
 git clone <git@git.sr.ht>:~swaits/mcps
@@ -48,10 +54,10 @@ file in YAML or JSON format.
 ### Basic Usage
 
 ```bash
-./mcps example.yaml -i 100000 -w 10
+mcps example.yaml -i 100000 -w 10
 ```
 
-This command runs the Monte Carlo simulation on the example.yaml schedule file
+This command runs the Monte Carlo simulation on the `example.yaml` schedule file
 with 100,000 iterations and overrides the number of workers to 10.
 
 ### Command-Line Options
