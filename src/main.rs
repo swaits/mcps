@@ -70,7 +70,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Arg::new("workers")
                 .short('w')
                 .long("workers")
-                .help("Override number of workers specified in schedule file")
+                .help("Override `num_workers` specified in schedule file")
                 .value_name("num_workers"),
         )
         .after_help(AFTER_HELP_TEXT)
@@ -102,7 +102,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Results output
     print_ascii_cdf(
         &project_durations,
-        "Project Completion Time (by probability)",
+        format!(
+            "Project Completion Time with {} Worker{} (by probability)",
+            schedule.num_workers,
+            if schedule.num_workers == 1 { "" } else { "s" }
+        )
+        .as_str(),
         "Duration",
     );
     println!();
@@ -123,10 +128,8 @@ fn print_ascii_cdf(data: &[Duration], title: &str, units: &str) {
 
     let width = 60; // Total width of the field
 
-    // Calculate padding
+    // Calculate padding for the title
     let padding = (width - title.len()) / 2;
-
-    // Create the centered title with padding on both sides
     let centered_title = format!(
         "{:padding_left$}{}{:padding_right$}",
         "",
@@ -142,8 +145,9 @@ fn print_ascii_cdf(data: &[Duration], title: &str, units: &str) {
 
     let bar_width = 60;
 
+    // Calculate bar positions
+    let mut bar_positions = Vec::new();
     for i in 0..=20 {
-        let percentile = 100 - i * 5;
         let lower_percentile = if i == 20 {
             0.0000000001
         } else {
@@ -162,26 +166,40 @@ fn print_ascii_cdf(data: &[Duration], title: &str, units: &str) {
             / (max.as_secs_f64() / 86400.0 - min.as_secs_f64() / 86400.0);
         let bar_position = (normalized_position * bar_width as f64).round() as usize;
 
+        bar_positions.push((bar_position, days));
+    }
+
+    // Determine the needed shift to center the graph
+    let min_bar_position = bar_positions.iter().map(|(pos, _)| pos).min().unwrap_or(&0);
+    let max_bar_position = bar_positions
+        .iter()
+        .map(|(pos, _)| pos)
+        .max()
+        .unwrap_or(&bar_width);
+    let offset = (bar_width - (max_bar_position - min_bar_position)) / 2;
+
+    for (i, (bar_position, days)) in bar_positions.iter().enumerate() {
+        let shifted_bar_position = bar_position + offset;
+
         let (fg, bg) = if i % 2 == 0 {
             ('░', '▓')
         } else {
             ('▒', '█')
         };
 
-        let color_code = match percentile {
-            0..=50 => "\x1b[31m",    // Red
-            55..=75 => "\x1b[33m",   // Orange
-            80..=90 => "\x1b[32m",   // Green
-            95..=95 => "\x1b[33m",   // Orange
-            100..=100 => "\x1b[31m", // Red
-            _ => "\x1b[0m",          // Default (shouldn't happen)
+        let color_code = match 100 - i * 5 {
+            0..=50 => "\x1b[31m",   // Red
+            55..=75 => "\x1b[33m",  // Orange
+            80..=90 => "\x1b[32m",  // Green
+            95..=100 => "\x1b[31m", // Red
+            _ => "\x1b[0m",         // Default (shouldn't happen)
         };
         let reset_code = "\x1b[0m";
 
         let bar_with_divider: String = (0..bar_width)
             .map(|j| match j {
-                _ if j == bar_position => '▮',
-                _ if j < bar_position => fg,
+                _ if j == shifted_bar_position => '▮',
+                _ if j < shifted_bar_position => fg,
                 _ => bg,
             })
             .collect();
@@ -189,7 +207,7 @@ fn print_ascii_cdf(data: &[Duration], title: &str, units: &str) {
         println!(
             "{}{:>4}{}│{}{}{}│{}{:5.0} days{}",
             color_code,
-            format!("p{}", percentile),
+            format!("p{}", 100 - i * 5),
             reset_code,
             color_code,
             bar_with_divider,
