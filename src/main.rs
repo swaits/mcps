@@ -50,7 +50,7 @@ Examples of supported file formats:
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let matches = Command::new("Monte Carlo Project Scheduler")
-        .version("0.1.0")
+        .version("0.1.1")
         .author("Stephen Waits <steve@waits.net>")
         .about("Runs Monte Carlo simulations on project schedules")
         .arg(
