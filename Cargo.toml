@@ -1,7 +1,15 @@
 [package]
 name = "mcps"
 version = "0.1.0"
+authors = ["Stephen Waits <steve@waits.net>"]
 edition = "2021"
+description = "A command-line tool for running Monte Carlo simulations on project schedules."
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/swaits/mcps"
+homepage = "https://github.com/swaits/mcps"
+keywords = ["monte-carlo", "project-scheduling", "simulation", "cli"]
+categories = ["command-line-utilities", "science", "productivity"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
