@@ -28,18 +28,16 @@ install Rust using `rustup`:
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-### Building from Source
-
-_Preferred_: Install directly from crates.io:
+### Option 1: Install from Crates.io (preferred)
 
 ```bash
 cargo install mcps
 ```
 
-_Alternative_: Clone and build the repository locally:
+### Option 2: Clone and build the repository locally
 
 ```bash
-git clone <git@git.sr.ht>:~swaits/mcps
+git clone https://github.com/swaits/mcps.git
 cd mcps
 cargo build --release
 ```
@@ -57,7 +55,7 @@ file in YAML or JSON format.
 mcps example.yaml -i 100000 -w 10
 ```
 
-This command runs the Monte Carlo simulation on the `example.yaml` schedule file
+This command runs the Monte Carlo simulation on the [`example.yaml`](./example.yaml) schedule file
 with 100,000 iterations and overrides the number of workers to 10.
 
 ### Command-Line Options
@@ -85,6 +83,9 @@ tasks:
     dependencies: [DesignPhase]
 ```
 
+This repo includes examples in [JSON](./example.json) and
+[YAML](./example.yaml).
+
 ### Example Output
 
 The tool generates an ASCII-based cumulative distribution function (CDF) graph,
@@ -110,4 +111,4 @@ always welcome!
 
 ### License
 
-This project is licensed under the MIT License. See the LICENSE file for details.
+This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
