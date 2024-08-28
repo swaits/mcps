@@ -201,9 +201,9 @@ checksum = "22ec99545bb0ed0ea7bb9b8e1e9122ea386ff8a48c0922e43f36d45ab09e0e80"
 
 [[package]]
 name = "distimate"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2e266cc5215f2a854deadfe97b5fb1047ab35121fd4fafa958e3760945790bf"
+checksum = "c93ea4f00253fe5c1fece7e0414fa6b56e59c433f52c6648752ac7eac94d9d4a"
 dependencies = [
  "rand",
  "statrs",
@@ -880,9 +880,9 @@ checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
 
 [[package]]
 name = "workdays"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e3bc4b29b64419a2983662ca6902adf5313df2a061e8f6104b2dd603765b5aa"
+checksum = "9b75952fce58ac7fe61b0ea77335da6e8f11345e43571ad041419046117f11fa"
 dependencies = [
  "chrono",
  "serde",

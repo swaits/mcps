@@ -10,6 +10,7 @@ repository = "https://github.com/swaits/mcps"
 homepage = "https://github.com/swaits/mcps"
 keywords = ["monte", "carlo", "project", "schedules", "estimation"]
 categories = ["command-line-utilities", "development-tools", "simulation"]
+rust-version = "1.74.1"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
