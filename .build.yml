@@ -1,9 +1,80 @@
-image: alpine/edge
+image: archlinux
+packages:
+  - rustup
+  - cargo-audit
+  - cargo-deny
+  - cargo-msrv
+  - cargo-nextest
+  - cargo-outdated
+  - cargo-tarpaulin
+  - cargo-udeps
 secrets:
   - 88cce185-d2ec-4573-9546-e33f36f79bbf
 sources:
   - git+ssh://git@git.sr.ht/~swaits/mcps
+artifacts:
+  - mcps/tarpaulin-report.html
 tasks:
+  - setup: |
+      rustup toolchain install nightly stable
+      cd mcps/
+      rustup run stable cargo fetch
+  - format: |
+      rustup default stable
+      cd mcps/
+      cargo fmt --verbose --check --all
+  - lint: |
+      rustup default stable
+      cd mcps/
+      cargo clippy --verbose --all-targets --all-features
+  - outdated: |
+      rustup default stable
+      cd mcps/
+      cargo outdated
+  - deny: |
+      rustup default stable
+      cd mcps/
+      cargo deny check
+  - udeps: |
+      rustup default nightly
+      cd mcps/
+      cargo +nightly udeps --all-features
+  - audit: |
+      rustup default stable
+      cd mcps/
+      cargo audit -d /tmp/advisory-db
+  - msrv: |
+      rustup default stable
+      cd mcps/
+      cargo msrv verify
+  - coverage: |
+      rustup default stable
+      cd mcps/
+      cargo tarpaulin --verbose --all-features --out html
+  - stable: |
+      rustup default stable
+      cd mcps/
+      cargo build --verbose --all-targets --all-features
+      cargo nextest run --verbose --all-targets --all-features
+  - nightly: |
+      rustup default nightly
+      cd mcps/
+      cargo clippy --verbose --all-targets --all-features  ||:
+      cargo build --verbose --all-targets --all-features   ||:
+      cargo nextest --verbose --all-targets --all-features ||:
+  - bench: |
+      rustup default stable
+      cd mcps/
+      cargo bench --verbose --all-targets --all-features
+  - examples: |
+      rustup default stable
+      cd mcps/
+      cargo run --verbose --all-features --example planetlab
+      cargo run --verbose --all-features --example planetlab --release
+  - docs: |
+      cd mcps/
+      rustup run stable cargo doc --no-deps
+      rustup run nightly cargo doc --no-deps ||:
   - mirror-to-github: |
       cd ~/mcps
       ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
