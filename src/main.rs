@@ -15,7 +15,7 @@ Find example project definition and schedule config files in the repository:
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let matches = Command::new("Monte Carlo Project Scheduler")
-        .version("0.1.1")
+        .version("0.2.1")
         .author("Stephen Waits <steve@waits.net>")
         .about("Runs Monte Carlo simulations on project schedules")
         .arg(
@@ -73,7 +73,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // Determine the start date (command line > project file > TODAY)
-    let start_date = matches.get_one::<String>("begin")
+    let start_date = matches
+        .get_one::<String>("begin")
         .and_then(|date| NaiveDate::parse_from_str(date, "%Y-%m-%d").ok())
         .or(project.start_date)
         .unwrap_or_else(|| Utc::now().date_naive());
