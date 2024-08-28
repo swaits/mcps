@@ -1,6 +1,6 @@
 [package]
 name = "mcps"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Stephen Waits <steve@waits.net>"]
 edition = "2021"
 description = "A command-line tool for running Monte Carlo simulations on project schedules."
