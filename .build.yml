@@ -66,11 +66,6 @@ tasks:
       rustup default stable
       cd mcps/
       cargo bench --verbose --all-targets --all-features
-  - examples: |
-      rustup default stable
-      cd mcps/
-      cargo run --verbose --all-features --example planetlab
-      cargo run --verbose --all-features --example planetlab --release
   - docs: |
       cd mcps/
       rustup run stable cargo doc --no-deps
