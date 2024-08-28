@@ -1,6 +1,6 @@
 [package]
 name = "mcps"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Stephen Waits <steve@waits.net>"]
 edition = "2021"
 description = "A command-line tool for running Monte Carlo simulations on project schedules."
@@ -22,13 +22,16 @@ name = "mcps"
 path = "src/main.rs"
 
 [dependencies]
+chrono = "0.4.38"
 clap = "4.5.15"
+distimate = "0.2.0"
 rand = "0.8.5"
 rand_distr = "0.4.3"
 rayon = "1.10.0"
 serde = { version = "1.0.207", features = ["derive"] }
 serde_json = "1.0.124"
 serde_yaml = "0.9.34"
+workdays = "0.1.0"
 
 [dev-dependencies]
 tempfile = "3.12.0"

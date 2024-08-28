@@ -1,5 +1,5 @@
 use mcps::{
-    schedule::Schedule,
+    schedule::Project,
     simulation::run_multiple_simulations,
     task::{days_to_duration, Task},
 };
@@ -9,47 +9,57 @@ use std::time::Duration;
 #[test]
 fn test_simulation_with_different_worker_counts() {
     let tasks = vec![
-        Task::new("A", vec![], days_to_duration(1.0), days_to_duration(3.0)),
+        Task::new(
+            "A",
+            vec![],
+            days_to_duration(1.0),
+            days_to_duration(2.0),
+            days_to_duration(3.0),
+        ),
         Task::new(
             "B",
             vec!["A".to_string()],
             days_to_duration(2.0),
+            days_to_duration(3.0),
             days_to_duration(4.0),
         ),
         Task::new(
             "C",
             vec!["A".to_string()],
             days_to_duration(3.0),
+            days_to_duration(4.0),
             days_to_duration(5.0),
         ),
         Task::new(
             "D",
             vec!["B".to_string(), "C".to_string()],
             days_to_duration(2.0),
+            days_to_duration(4.0),
             days_to_duration(6.0),
         ),
         Task::new(
             "E",
             vec!["B".to_string()],
             days_to_duration(1.0),
+            days_to_duration(1.5),
             days_to_duration(2.0),
         ),
         Task::new(
             "F",
             vec!["D".to_string(), "E".to_string()],
             days_to_duration(2.0),
+            days_to_duration(3.0),
             days_to_duration(4.0),
         ),
     ];
 
-    let estimate_confidence = 0.8;
     let num_simulations = 1000;
 
     let mut all_efforts = Vec::new();
 
     for num_workers in [1, 2, 4, 8, 16, 32] {
-        let schedule = Schedule::new(tasks.clone(), num_workers, estimate_confidence)
-            .expect("Failed to create schedule");
+        let schedule =
+            Project::new(tasks.clone(), num_workers, None).expect("Failed to create schedule");
         let (project_durations, effort_times) =
             run_multiple_simulations(&schedule, num_simulations);
 

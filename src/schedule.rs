@@ -1,25 +1,27 @@
 use crate::task::Task;
 
+use chrono::NaiveDate;
+
 use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
 #[derive(Debug)]
-pub struct Schedule {
+pub struct Project {
     pub tasks: Vec<Task>,
     pub num_workers: usize,
-    pub estimate_confidence: f64,
+    pub start_date: Option<NaiveDate>,
 }
 
-impl Schedule {
+impl Project {
     pub fn new(
         tasks: Vec<Task>,
         num_workers: usize,
-        estimate_confidence: f64,
+        start_date: Option<NaiveDate>,
     ) -> Result<Self, String> {
-        let schedule = Schedule {
+        let schedule = Project {
             tasks,
             num_workers,
-            estimate_confidence,
+            start_date,
         };
         schedule.validate()?;
         Ok(schedule)
@@ -94,11 +96,12 @@ impl Schedule {
 mod tests {
     use super::*;
 
-    fn create_task(id: &str, min: u64, max: u64, deps: Vec<&str>) -> Task {
+    fn create_task(id: &str, min: u64, likely: u64, max: u64, deps: Vec<&str>) -> Task {
         Task {
             id: id.to_string(),
             dependencies: deps.into_iter().map(String::from).collect(),
             min_time: Duration::from_secs(min),
+            likely_time: Duration::from_secs(likely),
             max_time: Duration::from_secs(max),
         }
     }
@@ -106,25 +109,25 @@ mod tests {
     #[test]
     fn test_valid_schedule() {
         let tasks = vec![
-            create_task("A", 1, 3, vec![]),
-            create_task("B", 2, 4, vec!["A"]),
-            create_task("C", 3, 5, vec!["A"]),
+            create_task("A", 1, 2, 3, vec![]),
+            create_task("B", 2, 3, 4, vec!["A"]),
+            create_task("C", 3, 4, 5, vec!["A"]),
         ];
-        let schedule = Schedule::new(tasks, 2, 0.8);
+        let schedule = Project::new(tasks, 2, None);
         assert!(schedule.is_ok());
     }
 
     #[test]
     fn test_empty_task_list() {
-        let schedule = Schedule::new(vec![], 2, 0.8);
+        let schedule = Project::new(vec![], 2, None);
         assert!(schedule.is_err());
         assert_eq!(schedule.unwrap_err(), "Empty task list");
     }
 
     #[test]
     fn test_invalid_task_duration() {
-        let tasks = vec![create_task("A", 3, 1, vec![])];
-        let schedule = Schedule::new(tasks, 2, 0.8);
+        let tasks = vec![create_task("A", 3, 2, 1, vec![])];
+        let schedule = Project::new(tasks, 2, None);
         assert!(schedule.is_err());
         assert_eq!(
             schedule.unwrap_err(),
@@ -134,8 +137,8 @@ mod tests {
 
     #[test]
     fn test_zero_duration() {
-        let tasks = vec![create_task("A", 0, 1, vec![])];
-        let schedule = Schedule::new(tasks, 2, 0.8);
+        let tasks = vec![create_task("A", 0, 1, 2, vec![])];
+        let schedule = Project::new(tasks, 2, None);
         assert!(schedule.is_err());
         assert_eq!(schedule.unwrap_err(), "Invalid task duration for task A");
     }
@@ -143,10 +146,10 @@ mod tests {
     #[test]
     fn test_missing_dependency() {
         let tasks = vec![
-            create_task("A", 1, 3, vec![]),
-            create_task("B", 2, 4, vec!["C"]),
+            create_task("A", 1, 2, 3, vec![]),
+            create_task("B", 2, 3, 4, vec!["C"]),
         ];
-        let schedule = Schedule::new(tasks, 2, 0.8);
+        let schedule = Project::new(tasks, 2, None);
         assert!(schedule.is_err());
         assert_eq!(schedule.unwrap_err(), "Missing dependency C for task B");
     }
@@ -154,10 +157,10 @@ mod tests {
     #[test]
     fn test_cyclic_dependency() {
         let tasks = vec![
-            create_task("A", 1, 3, vec!["B"]),
-            create_task("B", 2, 4, vec!["A"]),
+            create_task("A", 1, 2, 3, vec!["B"]),
+            create_task("B", 2, 3, 4, vec!["A"]),
         ];
-        let schedule = Schedule::new(tasks, 2, 0.8);
+        let schedule = Project::new(tasks, 2, None);
         assert!(schedule.is_err());
         assert!(schedule
             .unwrap_err()
@@ -167,28 +170,28 @@ mod tests {
     #[test]
     fn test_complex_valid_schedule() {
         let tasks = vec![
-            create_task("A", 1, 3, vec![]),
-            create_task("B", 2, 4, vec!["A"]),
-            create_task("C", 3, 5, vec!["A"]),
-            create_task("D", 2, 6, vec!["B", "C"]),
-            create_task("E", 1, 2, vec!["A"]),
-            create_task("F", 2, 4, vec!["D", "E"]),
+            create_task("A", 1, 2, 3, vec![]),
+            create_task("B", 2, 3, 4, vec!["A"]),
+            create_task("C", 3, 4, 5, vec!["A"]),
+            create_task("D", 2, 4, 6, vec!["B", "C"]),
+            create_task("E", 1, 2, 4, vec!["A"]),
+            create_task("F", 2, 3, 4, vec!["D", "E"]),
         ];
-        let schedule = Schedule::new(tasks, 3, 0.9);
+        let schedule = Project::new(tasks, 3, None);
         assert!(schedule.is_ok());
     }
 
     #[test]
     fn test_complex_cyclic_dependency() {
         let tasks = vec![
-            create_task("A", 1, 3, vec!["F"]),
-            create_task("B", 2, 4, vec!["A"]),
-            create_task("C", 3, 5, vec!["B"]),
-            create_task("D", 2, 6, vec!["C"]),
-            create_task("E", 1, 2, vec!["D"]),
-            create_task("F", 2, 4, vec!["E"]),
+            create_task("A", 1, 2, 3, vec!["F"]),
+            create_task("B", 2, 3, 4, vec!["A"]),
+            create_task("C", 3, 4, 5, vec!["B"]),
+            create_task("D", 2, 3, 6, vec!["C"]),
+            create_task("E", 1, 2, 3, vec!["D"]),
+            create_task("F", 2, 3, 4, vec!["E"]),
         ];
-        let schedule = Schedule::new(tasks, 3, 0.9);
+        let schedule = Project::new(tasks, 3, None);
         assert!(
             schedule.is_err(),
             "Expected cyclic dependency error, but got Ok"
@@ -204,8 +207,8 @@ mod tests {
 
     #[test]
     fn test_self_dependency() {
-        let tasks = vec![create_task("A", 1, 3, vec!["A"])];
-        let schedule = Schedule::new(tasks, 1, 0.8);
+        let tasks = vec![create_task("A", 1, 2, 3, vec!["A"])];
+        let schedule = Project::new(tasks, 1, None);
         assert!(
             schedule.is_err(),
             "Expected self-dependency error, but got Ok"

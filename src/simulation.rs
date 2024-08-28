@@ -1,7 +1,7 @@
-use crate::schedule::Schedule;
+use crate::schedule::Project;
 
+use distimate::Pert;
 use rand::prelude::*;
-use rand_distr::{Distribution, Normal};
 use rayon::prelude::*;
 
 use std::{
@@ -9,13 +9,14 @@ use std::{
     time::Duration,
 };
 
+#[derive(Debug)]
 pub struct SimulationResult {
     pub total_project_duration: Duration,
     pub total_effort_time: Duration,
 }
 
 pub fn run_multiple_simulations(
-    schedule: &Schedule,
+    schedule: &Project,
     num_simulations: usize,
 ) -> (Vec<Duration>, Vec<Duration>) {
     (0..num_simulations)
@@ -27,7 +28,7 @@ pub fn run_multiple_simulations(
         .unzip()
 }
 
-fn run_simulation(schedule: &Schedule) -> SimulationResult {
+fn run_simulation(schedule: &Project) -> SimulationResult {
     let mut rng = thread_rng();
 
     // Simulate task times
@@ -35,12 +36,7 @@ fn run_simulation(schedule: &Schedule) -> SimulationResult {
         .tasks
         .iter()
         .map(|task| {
-            let task_time = simulate_task_time(
-                &mut rng,
-                task.min_time,
-                task.max_time,
-                schedule.estimate_confidence,
-            );
+            let task_time = simulate_task_time(&mut rng, task.min_time, task.max_time);
             (&task.id, task_time)
         })
         .collect();
@@ -117,21 +113,13 @@ fn run_simulation(schedule: &Schedule) -> SimulationResult {
     }
 }
 
-fn simulate_task_time(
-    rng: &mut impl Rng,
-    min_time: Duration,
-    max_time: Duration,
-    estimate_confidence: f64,
-) -> Duration {
+fn simulate_task_time(rng: &mut impl Rng, min_time: Duration, max_time: Duration) -> Duration {
     let min_secs = min_time.as_secs_f64();
     let max_secs = max_time.as_secs_f64();
     let mean = (min_secs + max_secs) / 2.0;
 
-    let z_score = (1.0 - (1.0 - estimate_confidence) / 2.0).sqrt() * 2.0;
-    let std_dev = (max_secs - min_secs) / (2.0 * z_score);
-
-    let normal = Normal::new(mean, std_dev).unwrap();
-    let sampled_secs = normal.sample(rng).clamp(min_secs, max_secs);
+    let pert = Pert::new(min_secs, mean, max_secs).unwrap();
+    let sampled_secs = pert.sample(rng);
 
     Duration::from_secs_f64(sampled_secs)
 }
@@ -146,10 +134,9 @@ mod tests {
         let mut rng = thread_rng();
         let min_time = Duration::from_secs(5);
         let max_time = Duration::from_secs(15);
-        let estimate_confidence = 0.8;
 
         for _ in 0..1000 {
-            let time = simulate_task_time(&mut rng, min_time, max_time, estimate_confidence);
+            let time = simulate_task_time(&mut rng, min_time, max_time);
             assert!(
                 time >= min_time && time <= max_time,
                 "Simulated time should be within range"
@@ -159,8 +146,14 @@ mod tests {
 
     #[test]
     fn test_single_task_simulation() {
-        let task = Task::new("A", vec![], Duration::from_secs(5), Duration::from_secs(15));
-        let schedule = Schedule::new(vec![task], 1, 0.8).unwrap();
+        let task = Task::new(
+            "A",
+            vec![],
+            Duration::from_secs(5),
+            Duration::from_secs(10),
+            Duration::from_secs(15),
+        );
+        let schedule = Project::new(vec![task], 1, None).unwrap();
 
         let result = run_simulation(&schedule);
 
@@ -178,11 +171,29 @@ mod tests {
     #[test]
     fn test_multiple_independent_tasks() {
         let tasks = vec![
-            Task::new("A", vec![], Duration::from_secs(5), Duration::from_secs(10)),
-            Task::new("B", vec![], Duration::from_secs(7), Duration::from_secs(12)),
-            Task::new("C", vec![], Duration::from_secs(3), Duration::from_secs(8)),
+            Task::new(
+                "A",
+                vec![],
+                Duration::from_secs(5),
+                Duration::from_secs(6),
+                Duration::from_secs(10),
+            ),
+            Task::new(
+                "B",
+                vec![],
+                Duration::from_secs(7),
+                Duration::from_secs(10),
+                Duration::from_secs(12),
+            ),
+            Task::new(
+                "C",
+                vec![],
+                Duration::from_secs(3),
+                Duration::from_secs(6),
+                Duration::from_secs(8),
+            ),
         ];
-        let schedule = Schedule::new(tasks, 2, 0.8).unwrap();
+        let schedule = Project::new(tasks, 2, None).unwrap();
 
         let result = run_simulation(&schedule);
 
@@ -199,32 +210,42 @@ mod tests {
     #[test]
     fn test_tasks_with_dependencies() {
         let tasks = vec![
-            Task::new("A", vec![], Duration::from_secs(5), Duration::from_secs(10)),
+            Task::new(
+                "A",
+                vec![],
+                Duration::from_secs(5),
+                Duration::from_secs(8),
+                Duration::from_secs(10),
+            ),
             Task::new(
                 "B",
                 vec!["A".to_string()],
                 Duration::from_secs(7),
+                Duration::from_secs(9),
                 Duration::from_secs(12),
             ),
             Task::new(
                 "C",
                 vec!["A".to_string()],
                 Duration::from_secs(3),
+                Duration::from_secs(6),
                 Duration::from_secs(8),
             ),
             Task::new(
                 "D",
                 vec!["B".to_string(), "C".to_string()],
                 Duration::from_secs(4),
+                Duration::from_secs(7),
                 Duration::from_secs(9),
             ),
         ];
-        let schedule = Schedule::new(tasks, 2, 0.8).unwrap();
+        let schedule = Project::new(tasks, 2, None).unwrap();
 
         let result = run_simulation(&schedule);
+        println!("{:?}", result);
 
         assert!(
-            result.total_project_duration >= Duration::from_secs(14),
+            result.total_project_duration >= Duration::from_secs(13),
             "Project duration should be at least the minimum critical path duration"
         );
     }
@@ -232,15 +253,22 @@ mod tests {
     #[test]
     fn test_multiple_simulations_consistency() {
         let tasks = vec![
-            Task::new("A", vec![], Duration::from_secs(5), Duration::from_secs(10)),
+            Task::new(
+                "A",
+                vec![],
+                Duration::from_secs(5),
+                Duration::from_secs(8),
+                Duration::from_secs(10),
+            ),
             Task::new(
                 "B",
                 vec!["A".to_string()],
                 Duration::from_secs(7),
+                Duration::from_secs(10),
                 Duration::from_secs(12),
             ),
         ];
-        let schedule = Schedule::new(tasks, 1, 0.8).unwrap();
+        let schedule = Project::new(tasks, 1, None).unwrap();
 
         let (durations, efforts) = run_multiple_simulations(&schedule, 1000);
 

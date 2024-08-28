@@ -1,49 +1,67 @@
 {
   "num_workers": 8,
-  "estimate_confidence": 0.8,
+  "start_date": "2024-08-01",
   "tasks": [
     {
       "id": "RequirementsGathering",
-      "min_time": 10.0,
-      "max_time": 30.0,
+      "estimate": {
+        "min": 10.0,
+        "likely": 25.0,
+        "max": 30.0
+      },
       "dependencies": []
     },
     {
       "id": "SystemDesign",
-      "min_time": 15.0,
-      "max_time": 45.0,
+      "estimate": {
+        "min": 10.0,
+        "likely": 25.0,
+        "max": 30.0
+      },
       "dependencies": [
         "RequirementsGathering"
       ]
     },
     {
       "id": "DatabaseDesign",
-      "min_time": 10.0,
-      "max_time": 35.0,
+      "estimate": {
+        "min": 10.0,
+        "likely": 25.0,
+        "max": 30.0
+      },
       "dependencies": [
         "SystemDesign"
       ]
     },
     {
       "id": "UIUXDesign",
-      "min_time": 20.0,
-      "max_time": 50.0,
+      "estimate": {
+        "min": 10.0,
+        "likely": 25.0,
+        "max": 30.0
+      },
       "dependencies": [
         "RequirementsGathering"
       ]
     },
     {
       "id": "FrontendDevelopment",
-      "min_time": 25.0,
-      "max_time": 60.0,
+      "estimate": {
+        "min": 10.0,
+        "likely": 25.0,
+        "max": 30.0
+      },
       "dependencies": [
         "UIUXDesign"
       ]
     },
     {
       "id": "BackendDevelopment",
-      "min_time": 30.0,
-      "max_time": 80.0,
+      "estimate": {
+        "min": 10.0,
+        "likely": 25.0,
+        "max": 30.0
+      },
       "dependencies": [
         "SystemDesign",
         "DatabaseDesign"
@@ -51,16 +69,22 @@
     },
     {
       "id": "APIDevelopment",
-      "min_time": 20.0,
-      "max_time": 60.0,
+      "estimate": {
+        "min": 10.0,
+        "likely": 25.0,
+        "max": 30.0
+      },
       "dependencies": [
         "BackendDevelopment"
       ]
     },
     {
       "id": "IntegrationTesting",
-      "min_time": 15.0,
-      "max_time": 45.0,
+      "estimate": {
+        "min": 10.0,
+        "likely": 25.0,
+        "max": 30.0
+      },
       "dependencies": [
         "FrontendDevelopment",
         "BackendDevelopment",
@@ -69,32 +93,44 @@
     },
     {
       "id": "UserAcceptanceTesting",
-      "min_time": 10.0,
-      "max_time": 30.0,
+      "estimate": {
+        "min": 10.0,
+        "likely": 25.0,
+        "max": 30.0
+      },
       "dependencies": [
         "IntegrationTesting"
       ]
     },
     {
       "id": "PerformanceOptimization",
-      "min_time": 10.0,
-      "max_time": 40.0,
+      "estimate": {
+        "min": 10.0,
+        "likely": 25.0,
+        "max": 30.0
+      },
       "dependencies": [
         "IntegrationTesting"
       ]
     },
     {
       "id": "SecurityAudit",
-      "min_time": 10.0,
-      "max_time": 30.0,
+      "estimate": {
+        "min": 10.0,
+        "likely": 25.0,
+        "max": 30.0
+      },
       "dependencies": [
         "IntegrationTesting"
       ]
     },
     {
       "id": "FinalDeployment",
-      "min_time": 5.0,
-      "max_time": 15.0,
+      "estimate": {
+        "min": 10.0,
+        "likely": 25.0,
+        "max": 30.0
+      },
       "dependencies": [
         "UserAcceptanceTesting",
         "PerformanceOptimization",
@@ -103,8 +139,11 @@
     },
     {
       "id": "ProjectRetrospective",
-      "min_time": 3.0,
-      "max_time": 10.0,
+      "estimate": {
+        "min": 10.0,
+        "likely": 25.0,
+        "max": 30.0
+      },
       "dependencies": [
         "FinalDeployment"
       ]

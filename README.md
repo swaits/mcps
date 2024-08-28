@@ -4,13 +4,13 @@ Monte Carlo Project Scheduler (mcps) is a command-line tool that runs Monte
 Carlo simulations on project schedules to estimate completion times and effort
 required. It helps project managers and engineers gain a better understanding of
 potential project risks and timelines by providing a probabilistic analysis of
-schedule durations and total work effort.
+project durations and total work effort.
 
 ## Features
 
 - **Simulate Project Schedules**: Run multiple simulations to estimate the
   probability distribution of project completion times and total work effort.
-- **Customizable Inputs**: Accepts project schedules in YAML or JSON formats,
+- **Customizable Inputs**: Accepts project definitions in YAML or JSON formats,
   with options to override certain parameters like the number of workers or the
   number of iterations.
 - **Visual Output**: Generates an ASCII-based cumulative distribution function
@@ -34,6 +34,9 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 cargo install mcps
 ```
 
+Note, if you're upgrading, use `cargo install --force mcps` to force
+installation of the latest version..
+
 ### Option 2: Clone and build the repository locally
 
 ```bash
@@ -46,45 +49,79 @@ The binary will be available at `target/release/mcps`.
 
 ## Usage
 
-Once you have built the tool, you can use it by providing a project schedule
+Once you have built the tool, you can use it by providing a project definition
 file in YAML or JSON format.
 
 ### Basic Usage
 
 ```bash
-mcps example.yaml -i 100000 -w 10
+mcps project.yaml -i 100000 -w 10
 ```
 
-This command runs the Monte Carlo simulation on the [`example.yaml`](./example.yaml) schedule file
-with 100,000 iterations and overrides the number of workers to 10.
+This command runs the Monte Carlo simulation on the
+[`project.yaml`](./assets/project.yaml) project file with 100,000 iterations
+and overrides the number of workers to 10.
 
 ### Command-Line Options
 
-- `-i, --iterations <iterations>`: Specify the number of iterations to run. Must be at least 100. Default is 50,000.
-- `-w, --workers <num_workers>`: Override the number of workers specified in the schedule file.
-- `-v, --version`: Print version information.
-- `-h, --help`: Print help information.
+- `-i, --iterations <iterations>`: Specify the number of iterations to run. Must
+  be at least 100. Default is 50,000.
+- `-n, --workers <num_workers>`: Override `num_workers` specified in project file
+- `-b, --begin <YYYY-MM-DD>`: Override `start_date` specified in project file
+- `-s, --schedule <filename>`: Work schedule config file (.yaml or .json)
+- `-h, --help`: Print help
+- `-V, --version`: Print version
 
-### Schedule File Format
+### Project Definition File Format
 
-The tool accepts schedule files in YAML or JSON format. Below is an example of the YAML format:
+`mcps` accepts projects in YAML or JSON format. Below is an example of the
+YAML format:
 
 ```yaml
 num_workers: 5 # for the purpose of scheduling simulation
-estimate_confidence: 0.80 # confidence actuals will fall inside estimate bounds
+start_date: 2024-08-01 # [optional] project start date
 tasks:
   - id: DesignPhase
-    min_time: 1.5 # 1.5 days
-    max_time: 3.5 # 3.5 days
+    estimate:
+      min: 1.5 # 1.5 days
+      likely: 2.2 # 2.2 days (best guess at actual time)
+      max: 3.5 # 3.5 days
     dependencies: []
   - id: ImplementationPhase
-    min_time: 2.25 # 2.25 days
-    max_time: 4.75 # 4.75 days
+    estimate:
+      min: 2.25 # 2.25 days
+      likely: 3.9 # 3.9 days (best guess at actual time)
+      max: 4.75 # 4.75 days
     dependencies: [DesignPhase]
 ```
 
-This repo includes examples in [JSON](./example.json) and
-[YAML](./example.yaml).
+This repo includes examples in [JSON](./assets/project.json) and
+[YAML](./assets/project.yaml).
+
+### Work Schedule Configuration File Format
+
+This file is optional. It allows you to configure the days of the week you work
+along with any specific work holidays.
+
+If you don't provide a schedule file, the tool will default to a 5-day work week
+with no scheduled holidays.
+
+`mcps` accepts schedules in YAML or JSON format. Below is an example of the
+YAML format:
+
+work_days:
+
+```yaml
+work_days:
+  - Monday
+  - Tuesday
+  - Wednesday
+holidays:
+  - 2023-12-25
+```
+
+This repo includes examples in [JSON](./assets/schedule.json) and
+[YAML](./assets/schedule.yaml).
 
 ### Example Output
 
@@ -111,4 +148,5 @@ always welcome!
 
 ### License
 
-This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
+This project is licensed under the MIT License. See the [LICENSE](./LICENSE)
+file for details.

@@ -1,52 +1,17 @@
-use mcps::{schedule::Schedule, simulation::run_multiple_simulations};
+use chrono::{NaiveDate, Utc};
+use mcps::{schedule::Project, simulation::run_multiple_simulations};
 
 use clap::{Arg, Command};
+use workdays::WorkCalendar;
 
-use std::time::Duration;
+use std::{str::FromStr, time::Duration};
 
 const AFTER_HELP_TEXT: &str = "\
-Examples of supported file formats:
+Find example project definition and schedule config files in the repository:
 
-    YAML Format:
+    https://github.com/swaits/mcps/blob/main/examples/
 
-        num_workers: 5
-        estimate_confidence: 0.80
-        tasks:
-        - id: DesignPhase
-            min_time: 1.5  # 1.5 days
-            max_time: 3.5  # 3.5 days
-            dependencies: []
-        - id: ImplementationPhase
-            min_time: 2.25  # 2.25 days
-            max_time: 4.75  # 4.75 days
-            dependencies: [DesignPhase]
-
-    JSON Format:
-
-        {
-            \"num_workers\": 5,
-            \"estimate_confidence\": 0.80,
-            \"tasks\": [
-                {
-                    \"id\": \"DesignPhase\",
-                    \"min_time\": 1.5,
-                    \"max_time\": 3.5,
-                    \"dependencies\": []
-                },
-                {
-                    \"id\": \"ImplementationPhase\",
-                    \"min_time\": 2.25,
-                    \"max_time\": 4.75,
-                    \"dependencies\": [\"DesignPhase\"]
-                }
-            ]
-        }
-
-    Note: `estimate_confidence` is the confidence (0.0,1.0) that the
-          actual values fall in the task estimate ranges. For example,
-          0.8 means you believe that the actual time it will take to
-          complete a task falls in your [min_time,max_time] estimate
-          range for that task 80% of the time.";
+";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let matches = Command::new("Monte Carlo Project Scheduler")
@@ -55,7 +20,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .about("Runs Monte Carlo simulations on project schedules")
         .arg(
             Arg::new("filename")
-                .help("Path to the schedule file (.yaml or .json).")
+                .help("Path to the project file (.yaml or .json)")
                 .required(true)
                 .index(1),
         )
@@ -68,15 +33,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .arg(
             Arg::new("workers")
-                .short('w')
+                .short('n')
                 .long("workers")
-                .help("Override `num_workers` specified in schedule file")
+                .help("Override `num_workers` specified in project file")
                 .value_name("num_workers"),
+        )
+        .arg(
+            Arg::new("begin")
+                .short('b')
+                .long("begin")
+                .help("Override `start_date` specified in project file")
+                .value_name("YYYY-MM-DD"),
+        )
+        .arg(
+            Arg::new("schedule")
+                .short('s')
+                .long("schedule")
+                .help("Work schedule config file (.yaml or .json)")
+                .value_name("filename"),
         )
         .after_help(AFTER_HELP_TEXT)
         .get_matches();
 
-    let schedule_path = matches.get_one::<String>("filename").unwrap();
+    let project_path = matches.get_one::<String>("filename").unwrap();
     let num_simulations: usize = matches.get_one::<String>("iterations").unwrap().parse()?;
 
     // Ensure iterations is >= 100
@@ -84,8 +63,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Err("Iterations must be at least 100.".into());
     }
 
-    // Load the schedule
-    let mut schedule = Schedule::from_file(schedule_path)?;
+    // Load the project
+    let mut project = Project::from_file(project_path)?;
+
+    // Load work schedule if it exists
+    let calendar: WorkCalendar = match matches.get_one::<String>("schedule") {
+        Some(filename) => WorkCalendar::from_str(&std::fs::read_to_string(filename)?)?,
+        None => WorkCalendar::new(),
+    };
+
+    // Determine the start date (command line > project file > TODAY)
+    let start_date = matches.get_one::<String>("begin")
+        .and_then(|date| NaiveDate::parse_from_str(date, "%Y-%m-%d").ok())
+        .or(project.start_date)
+        .unwrap_or_else(|| Utc::now().date_naive());
 
     // Check if workers are overridden by command-line argument
     if let Some(workers_str) = matches.get_one::<String>("workers") {
@@ -93,34 +84,39 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if workers < 1 {
             return Err("Invalid number of workers, must be 1 or more".into());
         }
-        schedule.num_workers = workers;
+        project.num_workers = workers;
     }
 
     // Monte Carlo simulation
-    let (project_durations, effort_times) = run_multiple_simulations(&schedule, num_simulations);
+    let (project_durations, effort_times) = run_multiple_simulations(&project, num_simulations);
 
     // Results output
     print_ascii_cdf(
         &project_durations,
         format!(
-            "Project Completion Time with {} Worker{} (by probability)",
-            schedule.num_workers,
-            if schedule.num_workers == 1 { "" } else { "s" }
+            "Completion Time ({} Worker{}, starting {})",
+            project.num_workers,
+            if project.num_workers == 1 { "" } else { "s" },
+            start_date,
         )
         .as_str(),
-        "Duration",
+        &start_date,
+        &calendar,
     );
+
     println!();
+
     print_ascii_cdf(
         &effort_times,
-        "Total Work Effort (by probability)",
-        "Effort",
+        format!("Total Work Effort (1 worker, starting {})", start_date).as_str(),
+        &start_date,
+        &calendar,
     );
 
     Ok(())
 }
 
-fn print_ascii_cdf(data: &[Duration], title: &str, units: &str) {
+fn print_ascii_cdf(data: &[Duration], title: &str, start: &NaiveDate, calendar: &WorkCalendar) {
     let mut sorted_data = data.to_vec();
     sorted_data.sort_unstable();
     let min = sorted_data[0];
@@ -139,9 +135,9 @@ fn print_ascii_cdf(data: &[Duration], title: &str, units: &str) {
         padding_right = width - padding - title.len()
     );
 
-    println!("────┬────────────────────────────────────────────────────────────┬──────────");
-    println!("%ile│{}│{:>10}", centered_title, units);
-    println!("────┼────────────────────────────────────────────────────────────┼──────────");
+    println!("────┬────────────────────────────────────────────────────────────┬──────────┬──────────┬──────────");
+    println!("%ile│{}│ Workdays │ Schedule │ Complete  ", centered_title);
+    println!("────┼────────────────────────────────────────────────────────────┼──────────┼──────────┼──────────");
 
     let bar_width = 60;
 
@@ -179,6 +175,9 @@ fn print_ascii_cdf(data: &[Duration], title: &str, units: &str) {
     let offset = (bar_width - (max_bar_position - min_bar_position)) / 2;
 
     for (i, (bar_position, days)) in bar_positions.iter().enumerate() {
+        let (end_date, calendar_duration) =
+            calendar.compute_end_date(*start, *days as i64).unwrap();
+
         let shifted_bar_position = bar_position + offset;
 
         let (fg, bg) = if i % 2 == 0 {
@@ -191,7 +190,7 @@ fn print_ascii_cdf(data: &[Duration], title: &str, units: &str) {
             0..=50 => "\x1b[31m",   // Red
             55..=75 => "\x1b[33m",  // Orange
             80..=90 => "\x1b[32m",  // Green
-            95..=100 => "\x1b[31m", // Red
+            95..=100 => "\x1b[33m", // Orange
             _ => "\x1b[0m",         // Default (shouldn't happen)
         };
         let reset_code = "\x1b[0m";
@@ -205,7 +204,7 @@ fn print_ascii_cdf(data: &[Duration], title: &str, units: &str) {
             .collect();
 
         println!(
-            "{}{:>4}{}│{}{}{}│{}{:5.0} days{}",
+            "{}{:>4}{}│{}{}{}│{}{:5.0} days{}│{}{:5.0} days{}│{}{}{}",
             color_code,
             format!("p{}", 100 - i * 5),
             reset_code,
@@ -214,8 +213,14 @@ fn print_ascii_cdf(data: &[Duration], title: &str, units: &str) {
             reset_code,
             color_code,
             days,
+            reset_code,
+            color_code,
+            calendar_duration.num_days(),
+            reset_code,
+            color_code,
+            end_date,
             reset_code
         );
     }
-    println!("────┴────────────────────────────────────────────────────────────┴──────────");
+    println!("────┴────────────────────────────────────────────────────────────┴──────────┴──────────┴──────────");
 }

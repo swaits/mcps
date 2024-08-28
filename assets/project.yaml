@@ -1,129 +1,177 @@
 num_workers: 5
-estimate_confidence: 0.80
+start_date: 2024-08-01
 tasks:
   # Project Initiation and Planning
   - id: project_kickoff
-    min_time: 2
-    max_time: 3
+    estimate:
+      min: 2
+      likely: 2.8
+      max: 3
     dependencies: []
 
   - id: requirements_gathering
-    min_time: 10
-    max_time: 15
+    estimate:
+      min: 10
+      likely: 13
+      max: 15
     dependencies: [project_kickoff]
 
   - id: system_architecture_design
-    min_time: 15
-    max_time: 20
+    estimate:
+      min: 15
+      likely: 18
+      max: 20
     dependencies: [requirements_gathering]
 
   - id: database_design
-    min_time: 5
-    max_time: 10
+    estimate:
+      min: 5
+      likely: 8
+      max: 10
     dependencies: [system_architecture_design]
 
   # Frontend Development
   - id: ui_ux_design
-    min_time: 20
-    max_time: 30
+    estimate:
+      min: 20
+      likely: 24
+      max: 30
     dependencies: [requirements_gathering]
 
   - id: frontend_setup
-    min_time: 3
-    max_time: 5
+    estimate:
+      min: 3
+      likely: 4.2
+      max: 5
     dependencies: [ui_ux_design]
 
   - id: user_authentication_frontend
-    min_time: 5
-    max_time: 10
+    estimate:
+      min: 5
+      likely: 6.1
+      max: 10
     dependencies: [frontend_setup]
 
   - id: product_catalog_frontend
-    min_time: 15
-    max_time: 25
+    estimate:
+      min: 15
+      likely: 17
+      max: 25
     dependencies: [frontend_setup]
 
   - id: shopping_cart_frontend
-    min_time: 10
-    max_time: 15
+    estimate:
+      min: 10
+      likely: 12
+      max: 15
     dependencies: [frontend_setup]
 
   - id: checkout_process_frontend
-    min_time: 15
-    max_time: 20
+    estimate:
+      min: 15
+      likely: 17
+      max: 20
     dependencies: [shopping_cart_frontend]
 
   - id: user_profile_frontend
-    min_time: 5
-    max_time: 10
+    estimate:
+      min: 5
+      likely: 6
+      max: 10
     dependencies: [user_authentication_frontend]
 
   - id: search_functionality_frontend
-    min_time: 10
-    max_time: 15
+    estimate:
+      min: 10
+      likely: 12
+      max: 15
     dependencies: [product_catalog_frontend]
 
   # Backend Development
   - id: backend_setup
-    min_time: 5
-    max_time: 10
+    estimate:
+      min: 5
+      likely: 7
+      max: 10
     dependencies: [system_architecture_design, database_design]
 
   - id: user_authentication_backend
-    min_time: 10
-    max_time: 15
+    estimate:
+      min: 10
+      likely: 12
+      max: 15
     dependencies: [backend_setup]
 
   - id: product_catalog_backend
-    min_time: 20
-    max_time: 30
+    estimate:
+      min: 20
+      likely: 25
+      max: 30
     dependencies: [backend_setup]
 
   - id: shopping_cart_backend
-    min_time: 15
-    max_time: 20
+    estimate:
+      min: 15
+      likely: 18
+      max: 20
     dependencies: [backend_setup]
 
   - id: checkout_process_backend
-    min_time: 20
-    max_time: 25
+    estimate:
+      min: 20
+      likely: 23
+      max: 25
     dependencies: [shopping_cart_backend]
 
   - id: user_profile_backend
-    min_time: 10
-    max_time: 15
+    estimate:
+      min: 10
+      likely: 12
+      max: 15
     dependencies: [user_authentication_backend]
 
   - id: search_functionality_backend
-    min_time: 15
-    max_time: 20
+    estimate:
+      min: 15
+      likely: 18
+      max: 20
     dependencies: [product_catalog_backend]
 
   - id: payment_gateway_integration
-    min_time: 10
-    max_time: 15
+    estimate:
+      min: 10
+      likely: 13
+      max: 15
     dependencies: [checkout_process_backend]
 
   # API Development and Integration
   - id: api_design
-    min_time: 5
-    max_time: 10
+    estimate:
+      min: 5
+      likely: 7.5
+      max: 10
     dependencies: [system_architecture_design]
 
   - id: api_development
-    min_time: 25
-    max_time: 35
+    estimate:
+      min: 25
+      likely: 32
+      max: 35
     dependencies: [api_design, backend_setup]
 
   - id: api_documentation
-    min_time: 5
-    max_time: 10
+    estimate:
+      min: 5
+      likely: 7
+      max: 10
     dependencies: [api_development]
 
   # Testing
   - id: unit_testing
-    min_time: 20
-    max_time: 30
+    estimate:
+      min: 20
+      likely: 25
+      max: 30
     dependencies:
       [
         user_authentication_backend,
@@ -135,55 +183,75 @@ tasks:
       ]
 
   - id: integration_testing
-    min_time: 15
-    max_time: 20
+    estimate:
+      min: 15
+      likely: 16
+      max: 20
     dependencies: [unit_testing, api_development]
 
   - id: user_acceptance_testing
-    min_time: 10
-    max_time: 15
+    estimate:
+      min: 10
+      likely: 12
+      max: 15
     dependencies: [integration_testing]
 
   # Security and Performance
   - id: security_audit
-    min_time: 10
-    max_time: 15
+    estimate:
+      min: 10
+      likely: 12
+      max: 15
     dependencies: [integration_testing]
 
   - id: performance_optimization
-    min_time: 15
-    max_time: 20
+    estimate:
+      min: 15
+      likely: 17
+      max: 20
     dependencies: [integration_testing]
 
   # Deployment and Launch
   - id: deployment_planning
-    min_time: 5
-    max_time: 10
+    estimate:
+      min: 5
+      likely: 7
+      max: 10
     dependencies: [system_architecture_design]
 
   - id: staging_environment_setup
-    min_time: 5
-    max_time: 10
+    estimate:
+      min: 5
+      likely: 7
+      max: 10
     dependencies: [deployment_planning]
 
   - id: production_environment_setup
-    min_time: 10
-    max_time: 15
+    estimate:
+      min: 10
+      likely: 12
+      max: 15
     dependencies: [staging_environment_setup]
 
   - id: data_migration
-    min_time: 10
-    max_time: 20
+    estimate:
+      min: 10
+      likely: 12
+      max: 20
     dependencies: [production_environment_setup]
 
   - id: user_training
-    min_time: 5
-    max_time: 10
+    estimate:
+      min: 5
+      likely: 7
+      max: 10
     dependencies: [user_acceptance_testing]
 
   - id: final_deployment
-    min_time: 5
-    max_time: 10
+    estimate:
+      min: 5
+      likely: 7
+      max: 10
     dependencies:
       [
         user_acceptance_testing,
@@ -195,11 +263,15 @@ tasks:
 
   # Post-launch
   - id: post_launch_support
-    min_time: 10
-    max_time: 15
+    estimate:
+      min: 10
+      likely: 12
+      max: 15
     dependencies: [final_deployment]
 
   - id: project_retrospective
-    min_time: 2
-    max_time: 3
+    estimate:
+      min: 2
+      likely: 2.8
+      max: 3
     dependencies: [post_launch_support]

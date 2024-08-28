@@ -1,5 +1,5 @@
 use mcps::{
-    schedule::Schedule,
+    schedule::Project,
     simulation::run_multiple_simulations,
     task::{days_to_duration, Task},
 };
@@ -13,6 +13,7 @@ fn create_independent_tasks(num_tasks: usize) -> Vec<Task> {
                 &format!("Task_{}", i),
                 vec![],
                 days_to_duration(1.0),
+                days_to_duration(2.0),
                 days_to_duration(3.0),
             )
         })
@@ -23,14 +24,13 @@ fn create_independent_tasks(num_tasks: usize) -> Vec<Task> {
 fn test_no_dependencies_schedule() {
     let num_tasks = 32;
     let tasks = create_independent_tasks(num_tasks);
-    let estimate_confidence = 0.8;
     let num_simulations = 1_000;
 
     let mut prev_avg_effort = 0.0;
 
     for num_workers in [1, 2, 4, 8] {
-        let schedule = Schedule::new(tasks.clone(), num_workers, estimate_confidence)
-            .expect("Failed to create schedule");
+        let schedule =
+            Project::new(tasks.clone(), num_workers, None).expect("Failed to create schedule");
         let (project_durations, effort_times) =
             run_multiple_simulations(&schedule, num_simulations);
 

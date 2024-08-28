@@ -1,5 +1,5 @@
 use mcps::{
-    schedule::Schedule,
+    schedule::Project,
     simulation::run_multiple_simulations,
     task::{days_to_duration, Task},
 };
@@ -12,7 +12,6 @@ fn test_average_effort_calculation() {
     let min_days = 5.0;
     let max_days = 15.0;
     let expected_avg_days = 10.0;
-    let estimate_confidence = 0.8;
     let num_simulations = 10000;
     let num_workers = 1; // Using 1 worker to simplify effort calculation
 
@@ -23,13 +22,13 @@ fn test_average_effort_calculation() {
                 &format!("Task{}", i),
                 vec![],
                 days_to_duration(min_days),
+                days_to_duration(0.5 * (min_days + max_days)),
                 days_to_duration(max_days),
             )
         })
         .collect();
 
-    let schedule =
-        Schedule::new(tasks, num_workers, estimate_confidence).expect("Failed to create schedule");
+    let schedule = Project::new(tasks, num_workers, None).expect("Failed to create schedule");
 
     let (_, effort_times) = run_multiple_simulations(&schedule, num_simulations);
 

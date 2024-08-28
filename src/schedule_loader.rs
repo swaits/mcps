@@ -1,5 +1,6 @@
-use crate::{schedule::Schedule, task::Task};
+use crate::{schedule::Project, task::Task};
 
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 use std::{fs::File, io::Read, path::Path, time::Duration};
@@ -7,15 +8,23 @@ use std::{fs::File, io::Read, path::Path, time::Duration};
 #[derive(Debug, Deserialize, Serialize)]
 struct ScheduleInput {
     num_workers: usize,
-    estimate_confidence: f64,
+    start_date: Option<NaiveDate>,
     tasks: Vec<TaskInput>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct EstimateInput {
+    min: f64,
+    max: f64,
+    likely: f64,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 struct TaskInput {
     id: String,
-    min_time: f64,
-    max_time: f64,
+    name: Option<String>,
+    description: Option<String>,
+    estimate: EstimateInput,
     dependencies: Vec<String>,
 }
 
@@ -24,7 +33,7 @@ enum FileFormat {
     Json,
 }
 
-impl Schedule {
+impl Project {
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, Box<dyn std::error::Error>> {
         let mut file = File::open(&path)?;
         let mut contents = String::new();
@@ -41,13 +50,14 @@ impl Schedule {
             .into_iter()
             .map(|t| Task {
                 id: t.id,
-                min_time: Duration::from_secs_f64(t.min_time * 24.0 * 60.0 * 60.0),
-                max_time: Duration::from_secs_f64(t.max_time * 24.0 * 60.0 * 60.0),
+                min_time: Duration::from_secs_f64(t.estimate.min * 24.0 * 60.0 * 60.0),
+                likely_time: Duration::from_secs_f64(t.estimate.likely * 24.0 * 60.0 * 60.0),
+                max_time: Duration::from_secs_f64(t.estimate.max * 24.0 * 60.0 * 60.0),
                 dependencies: t.dependencies,
             })
             .collect();
 
-        let schedule = Schedule::new(tasks, input.num_workers, input.estimate_confidence)?;
+        let schedule = Project::new(tasks, input.num_workers, input.start_date)?;
 
         schedule.validate()?;
 
@@ -89,22 +99,24 @@ mod tests {
     fn test_load_from_yaml() {
         let yaml_content = r#"
 num_workers: 3
-estimate_confidence: 0.9
 tasks:
   - id: A
-    min_time: 1
-    max_time: 3
+    estimate:
+        min: 1
+        likely: 2.4
+        max: 3
     dependencies: []
   - id: B
-    min_time: 2
-    max_time: 4
+    estimate:
+        min: 2
+        likely: 2.4
+        max: 4
     dependencies: [A]
 "#;
         let (_temp_file, path) = create_temp_file(yaml_content, "yaml");
-        let schedule = Schedule::from_file(path).unwrap();
+        let schedule = Project::from_file(path).unwrap();
         assert_eq!(schedule.tasks.len(), 2);
         assert_eq!(schedule.num_workers, 3);
-        assert_eq!(schedule.estimate_confidence, 0.9);
     }
 
     #[test]
@@ -112,35 +124,39 @@ tasks:
         let json_content = r#"
 {
   "num_workers": 3,
-  "estimate_confidence": 0.9,
   "tasks": [
     {
       "id": "A",
-      "min_time": 1,
-      "max_time": 3,
+      "estimate": {
+        "min": 1,
+        "likely": 1.8,
+        "max": 3
+      },
       "dependencies": []
     },
     {
       "id": "B",
-      "min_time": 2,
-      "max_time": 4,
+      "estimate": {
+        "min": 2,
+        "likely": 1.8,
+        "max": 4
+      },
       "dependencies": ["A"]
     }
   ]
 }
 "#;
         let (_temp_file, path) = create_temp_file(json_content, "json");
-        let schedule = Schedule::from_file(path).unwrap();
+        let schedule = Project::from_file(path).unwrap();
         assert_eq!(schedule.tasks.len(), 2);
         assert_eq!(schedule.num_workers, 3);
-        assert_eq!(schedule.estimate_confidence, 0.9);
     }
 
     #[test]
     fn test_unsupported_format() {
         let content = "irrelevant content";
         let (_temp_file, path) = create_temp_file(content, "txt");
-        let result = Schedule::from_file(path);
+        let result = Project::from_file(path);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -152,15 +168,16 @@ tasks:
     fn test_invalid_schedule() {
         let yaml_content = r#"
 num_workers: 3
-estimate_confidence: 0.9
 tasks:
   - id: A
-    min_time: 3
-    max_time: 1  # Invalid: min_time > max_time
+    estimate:
+        min: 3
+        likely: 2
+        max: 1  # Invalid: min_time > max_time
     dependencies: []
 "#;
         let (_temp_file, path) = create_temp_file(yaml_content, "yaml");
-        let result = Schedule::from_file(path);
+        let result = Project::from_file(path);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -172,15 +189,16 @@ tasks:
     fn test_load_with_floating_point_times_yaml() {
         let yaml_content = r#"
 num_workers: 3
-estimate_confidence: 0.9
 tasks:
   - id: A
-    min_time: 1.5  # 1.5 days
-    max_time: 3.5  # 3.5 days
+    estimate:
+        min: 1.5  # 1.5 days
+        likely: 2 # 2.0 days
+        max: 3.5  # 3.5 days
     dependencies: []
 "#;
         let (_temp_file, path) = create_temp_file(yaml_content, "yaml");
-        let schedule = Schedule::from_file(path).unwrap();
+        let schedule = Project::from_file(path).unwrap();
 
         // Verify that there is one task and it has the correct times
         assert_eq!(schedule.tasks.len(), 1);
@@ -199,19 +217,21 @@ tasks:
         let json_content = r#"
 {
   "num_workers": 3,
-  "estimate_confidence": 0.9,
   "tasks": [
     {
       "id": "A",
-      "min_time": 1.5,
-      "max_time": 3.5,
+      "estimate": {
+        "min": 1.5,
+        "likely": 3,
+        "max": 3.5
+      },
       "dependencies": []
     }
   ]
 }
 "#;
         let (_temp_file, path) = create_temp_file(json_content, "json");
-        let schedule = Schedule::from_file(path).unwrap();
+        let schedule = Project::from_file(path).unwrap();
 
         // Verify that there is one task and it has the correct times
         assert_eq!(schedule.tasks.len(), 1);

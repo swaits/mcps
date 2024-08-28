@@ -5,6 +5,7 @@ pub struct Task {
     pub id: String,
     pub dependencies: Vec<String>,
     pub min_time: Duration,
+    pub likely_time: Duration,
     pub max_time: Duration,
 }
 
@@ -13,12 +14,14 @@ impl Task {
         id: &str,
         dependencies: Vec<String>,
         min_time: Duration,
+        likely_time: Duration,
         max_time: Duration,
     ) -> Self {
         Task {
             id: id.to_string(),
             dependencies,
             min_time,
+            likely_time,
             max_time,
         }
     }
@@ -51,6 +54,7 @@ mod tests {
             "Task1",
             vec!["Dep1".to_string(), "Dep2".to_string()],
             Duration::from_secs(1),
+            Duration::from_secs(3),
             Duration::from_secs(5),
         );
 
@@ -66,6 +70,7 @@ mod tests {
             "Task2",
             vec![],
             Duration::from_secs(2),
+            Duration::from_secs(7),
             Duration::from_secs(10),
         );
 
@@ -82,6 +87,7 @@ mod tests {
             vec!["Dep3".to_string()],
             Duration::from_secs(5),
             Duration::from_secs(5),
+            Duration::from_secs(5),
         );
 
         assert_eq!(task.id, "Task3");
@@ -95,6 +101,7 @@ mod tests {
             "Task4",
             vec!["Dep4".to_string()],
             Duration::from_secs(3),
+            Duration::from_secs(5),
             Duration::from_secs(7),
         );
         let task2 = task1.clone();

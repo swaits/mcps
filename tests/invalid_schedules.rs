@@ -1,10 +1,10 @@
 use mcps::{
-    schedule::Schedule,
+    schedule::Project,
     task::{days_to_duration, Task},
 };
 
 fn create_schedule_and_expect_error(tasks: Vec<Task>, expected_error: &str) {
-    let result = Schedule::new(tasks, 1, 0.8);
+    let result = Project::new(tasks, 1, None);
 
     assert!(
         result.is_err(),
@@ -27,12 +27,14 @@ fn test_cyclic_dependency() {
             "A",
             vec!["B".to_string()],
             days_to_duration(1.0),
+            days_to_duration(1.5),
             days_to_duration(2.0),
         ),
         Task::new(
             "B",
             vec!["A".to_string()],
             days_to_duration(1.0),
+            days_to_duration(1.5),
             days_to_duration(2.0),
         ),
     ];
@@ -47,12 +49,14 @@ fn test_missing_dependency() {
             "A",
             vec!["C".to_string()],
             days_to_duration(1.0),
+            days_to_duration(1.5),
             days_to_duration(2.0),
         ),
         Task::new(
             "B",
             vec!["A".to_string()],
             days_to_duration(1.0),
+            days_to_duration(1.5),
             days_to_duration(2.0),
         ),
     ];
@@ -66,6 +70,7 @@ fn test_negative_duration() {
         "A",
         vec![],
         days_to_duration(0.0),
+        days_to_duration(0.5),
         days_to_duration(1.0),
     )];
 
@@ -78,6 +83,7 @@ fn test_min_greater_than_max() {
         "A",
         vec![],
         days_to_duration(3.0),
+        days_to_duration(2.0),
         days_to_duration(2.0),
     )];
 
