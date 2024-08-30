@@ -15,7 +15,7 @@ Find example project definition and schedule config files in the repository:
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let matches = Command::new("Monte Carlo Project Scheduler")
-        .version("0.2.3")
+        .version("0.3.0")
         .author("Stephen Waits <steve@waits.net>")
         .about("Runs Monte Carlo simulations on project schedules")
         .arg(
@@ -188,11 +188,12 @@ fn print_ascii_cdf(data: &[Duration], title: &str, start: &NaiveDate, calendar: 
         };
 
         let color_code = match 100 - i * 5 {
-            0..=50 => "\x1b[31m",   // Red
-            55..=75 => "\x1b[33m",  // Orange
-            80..=90 => "\x1b[32m",  // Green
-            95..=100 => "\x1b[33m", // Orange
-            _ => "\x1b[0m",         // Default (shouldn't happen)
+            0..=45 => "\x1b[31m",        // Red
+            50..=65 => "\x1b[38;5;173m", // Orange
+            70..=80 => "\x1b[33m",       // Yellow
+            85..=95 => "\x1b[32m",       // Green
+            96..=100 => "\x1b[33m",      // Yellow
+            _ => "\x1b[0m",              // Default (shouldn't happen)
         };
         let reset_code = "\x1b[0m";
 
@@ -204,8 +205,20 @@ fn print_ascii_cdf(data: &[Duration], title: &str, start: &NaiveDate, calendar: 
             })
             .collect();
 
+        let trailing = match 100 - i * 5 {
+            95 => "◀━┓",
+            60 => "  ┣━━━━━━━━━━━━┓",
+            55 => "  ┃ 90%        ┃",
+            50 => "  ┃ Confidence ┃",
+            45 => "  ┃ Interval   ┃",
+            40 => "  ┣━━━━━━━━━━━━┛",
+            5 => "◀━┛",
+            6..=94 => "  ┃",
+            _ => "",
+        };
+
         println!(
-            "{}{:>4}{}│{}{}{}│{}{:5.0} days{}│{}{:5.0} days{}│{}{}{}",
+            "{}{:>4}{}│{}{}{}│{}{:5.0} days{}│{}{:5.0} days{}│{}{}{}{}",
             color_code,
             format!("p{}", 100 - i * 5),
             reset_code,
@@ -220,7 +233,8 @@ fn print_ascii_cdf(data: &[Duration], title: &str, start: &NaiveDate, calendar: 
             reset_code,
             color_code,
             end_date,
-            reset_code
+            reset_code,
+            trailing
         );
     }
     println!("────┴────────────────────────────────────────────────────────────┴──────────┴──────────┴──────────");
